@@ -1,5 +1,5 @@
 ---
-title: "Class 16"
+title: "LING 343 GitHub"
 author: "Zane Mohammad"
 format:
   html:
