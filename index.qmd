@@ -1,7 +1,9 @@
 ---
 title: "LING 343 GitHub"
 author: "Zane Mohammad"
-format: html
+format: 
+  html:
+    embed-resources: true
 output: 
   html_document:
     css: LING 343/Dark Data.css
