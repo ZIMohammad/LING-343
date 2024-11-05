@@ -1,10 +1,13 @@
 ---
 title: "LING 343 GitHub"
 author: "Zane Mohammad"
-format:
-  html:
-    theme: vapor
+format: html
+output: 
+  html_document:
+    css: LING 343/Dark Data.css
 ---
+
+<link href="Dark Data.css" rel="stylesheet"></link>
 
 ```{r}
 ```
