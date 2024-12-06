@@ -1,0 +1,80 @@
+---
+title: "Project 1"
+author: "Zane Mohammad"
+format:
+  html:
+    theme: darkly
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+## Libraries
+```{r}
+#| output = FALSE
+library(gutenbergr)
+library(tidytext)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+gRmirror <- "http://mirror.csclub.uwaterloo.ca/gutenberg"
+```
+
+## Functions
+
+Lets make some funcitons to expedite this process. When downloading dataframes,
+we will need to use the `gutenberg_download()` function, the unnest the tokens
+with `unnest_tokens(word, text)`, then remove stop words and unused columns.
+
+This function will take in one parameter for the ID number of the text.
+```{r}
+book_load <- function(id_num) {
+  gutenberg_download(id_num, mirror = gRmirror) |>
+  unnest_tokens(word, text) |> anti_join(stop_words) |> select(word)
+}
+```
+Lets also make a function that takes this dataframe and graphs it. We start by
+breaking it up into 1000 word chunks.
+
+Finish Explanation Later
+```{r}
+render_graph <- function(df) {
+  df |>
+    inner_join(get_sentiments("bing"), by = "word") |>
+    mutate(chunk = ceiling(row_number() / 100)) |>
+    group_by(chunk) |>
+    summarise(sentiment_score = sum(sentiment == "positive") - sum(sentiment == "negative")) |>
+  # Now Graph
+    ggplot(aes(x = chunk, y = sentiment_score, fill = sentiment_score > 0)) +
+    geom_bar(stat = "identity") +
+    scale_fill_manual(values = c("red", "blue"),
+                      labels = c("Negative", "Positive"),
+                      name = "Sentiment") +
+    labs(title = "Sentiment Analysis Over Book Progression",
+         x = "1000 Words Chunks",
+         y = "Sentiment Score") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+## Data
+```{r}
+#| output = FALSE
+# Philosophy
+symbolic_logic <- book_load(28696)
+# Fiction
+  # Tragedies
+othello <- book_load(2267)
+frankenstein <- book_load(84)
+  # Epics
+illiad <- book_load(3059)
+odyssey <- book_load(1727)
+```
+
+## Test
+```{r}
+othello |>
+  render_graph()
+frankenstein |>
+  render_graph()
+```
