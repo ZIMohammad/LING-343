@@ -3,10 +3,13 @@ title: "Project 2"
 author: "Zane Mohammad"
 format:
   html:
-    css: Dark Data.css
+    theme: Darkly
     embed-resources: true
 editor_options: 
   chunk_output_type: console
+execute: 
+  warning: false
+  message: false
 ---
 
 ## Libraries
@@ -225,7 +228,6 @@ Tragedy books appear to have the strongest sentiment of any of the given genres.
 ### Combined Graphs
 
 ```{r}
-#| echo = FALSE
 plot_multiple(sentiment_df(symbolic_logic), sentiment_df(practical_critique), sentiment_df(categories), sentiment_df(republic), "Philosophy Book Sentiment")
 plot_multiple(sentiment_df(don_quixote), sentiment_df(tristram_shandy), sentiment_df(divine_comedy), sentiment_df(inspector), "Comedy Sentiment")
 plot_multiple(sentiment_df(illiad), sentiment_df(odyssey), sentiment_df(gilgamesh), sentiment_df(paradise_lost), "Epic Sentiment")
