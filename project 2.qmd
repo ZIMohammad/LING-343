@@ -118,6 +118,12 @@ plot_multiple <- function(df1, df2, df3, df4, title_str){
     geom_point(data = df2, aes(x = proportion, y = sentiment_score, color = "2")) +
     geom_point(data = df3, aes(x = proportion, y = sentiment_score, color = "3")) +
     geom_point(data = df4, aes(x = proportion, y = sentiment_score, color = "4")) +
+# Individual Lines
+    geom_line(data = df1,aes(x = proportion, y = sentiment_score), stat = "smooth", se = FALSE, alpha = 0.7, color = "1") +
+    geom_line(data = df2,aes(x = proportion, y = sentiment_score), stat = "smooth", se = FALSE, alpha = 0.7, color = "2") +
+    geom_line(data = df3,aes(x = proportion, y = sentiment_score), stat = "smooth", se = FALSE, alpha = 0.7, color = "3") +
+    geom_line(data = df4,aes(x = proportion, y = sentiment_score), stat = "smooth", se = FALSE, alpha = 0.7, color = "4") +
+# Combined Lines
     geom_smooth(data = combined_df,aes(x = proportion, y = sentiment_score), method = "loess", se = FALSE) +
     coord_cartesian(ylim = c(-1, 1)) +
     scale_y_continuous(breaks = seq(-1, 1, by = 0.2)) +
@@ -240,16 +246,18 @@ From these combined graphs we can assess the strength of sentiment (by the graph
 
 #### Philosophy Books
 
-It looks like, while philosophers are very sentimental, there is no pattern of sentiment that is indicative of philosophy texts.
+It looks like, while philosophers are generally more optimisic that fiction-writers, there is no pattern of sentiment that is indicative of philosophy texts.
 
 #### Comedies
 
-The comedies have a low range and a very flat curve, so based on our data, we assume that comedies are less sentimental than Philosophy texts and Tragedies and that comedies do not follow any particular sentimental trend.
+The comedies tend to have net negative sentiment as well as a `-(x^3+x^2)` looking graph, so based on our data, we assume that comedies trend towards more negative sentiment, that start with a trend towards negativity and end with a trend towards negativity, with a long positive trend in the middle.
+
+This trend reminds us of Aristotle's remark in The Poetics, that comedies are nothing more than tales of bad fates upon bad men.
 
 #### Epics
 
-It appear that the beginnings of Epics have more positive sentiment and that that sentiment gradually declines before rising again towards the end. But overall, Epics are less sentimental than Philosophy books and Tragedies.
+In many way the Epic Trend can be described as the opposite of the Comic Trend. They begin with a trend towards positive sentiment and end with a trend towards positive sentiment, with a long trend towards negative sentiment in between.
 
 #### Tragedies
 
-Tragedies have the strongest trend lines, and very strong sentiments. It appears that philosophy texts start with positive sentiment and end with negative sentiment, with a small reverse in the trend towards the middle. This appears to be a strong trend.
+Tragedies have the strongest trend lines, and strongest average sentiments. Almost all of the aggregate trend line progresses towards more negative sentiment. However it appear that in the particular trend lines, there exist more distinct reversals of this trend in the middle.
