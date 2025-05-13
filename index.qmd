@@ -11,5 +11,7 @@ output:
 
 <link href="Dark Data.css" rel="stylesheet"></link>
 
+## [Project 2](/project 2.html)
+
 ```{r}
 ```
