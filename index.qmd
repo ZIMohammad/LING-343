@@ -1,5 +1,5 @@
 ---
-title: "LING 343 GitHub"
+title: "R Projects"
 author: "Zane Mohammad"
 format: 
   html:
@@ -11,7 +11,9 @@ output:
 
 <link href="Dark Data.css" rel="stylesheet"></link>
 
-## [Project 2](/project 2.html)
+## [LING343 Project 1](/Project%201/Project%201.html)
+
+## [LING343 Project 2](/project 2.html)
 
 ```{r}
 ```

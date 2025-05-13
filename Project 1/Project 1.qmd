@@ -1,0 +1,346 @@
+---
+title: "Project 1"
+author: "Zane Mohammad"
+format:
+  html:
+    theme: lux
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+## Data Organization
+
+### Get Data
+```{r}
+#| output: false
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+library(stringr)
+classics <- read.csv("data/classics.csv")
+```
+
+### Trim Excess Data
+(most of these texts are translated into English, so the `bibliography.languages` doesn't mean much)<br><br>
+(the subjects, as categorized here (`bibliography.subjects`), are difficult to parse through, we are better off using the `bibliography.congress.classifications` to do so)<br><br>
+(There are only 2 `bibliography.type`(s) that are not "text")<br><br>
+
+(`metadata.rank` can be derived from `metadata.downloads`)
+```{r}
+classics <- classics |>
+  select(-metadata.url, -bibliography.languages, -bibliography.subjects, -metadata.id, -metadata.formats.total, -metadata.formats.types, -bibliography.type, -metadata.rank)
+```
+
+### Rename Elements
+```{r}
+#| code-fold: true
+#| output: false
+classics <- classics |>
+  rename(
+    LoC_classifications = `bibliography.congress.classifications`,
+    title = `bibliography.title`,
+    stats.downloads = `metadata.downloads`,
+    author.birthdate = `bibliography.author.birth`,
+    author.deathdate = `bibliography.author.death`,
+    author.name = `bibliography.author.name`,
+    pub.date = `bibliography.publication.day`,
+    pub.date_full = `bibliography.publication.full`,
+    pub.month = `bibliography.publication.month`,
+    pub.month_name = `bibliography.publication.month.name`,
+    pub.year = `bibliography.publication.year`,
+    difficulty.ari = `metrics.difficulty.automated.readability.index`,
+    difficulty.coleman = `metrics.difficulty.coleman.liau.index`,
+    difficulty.dale = `metrics.difficulty.dale.chall.readability.score`,
+    difficulty.vocabulary = `metrics.difficulty.difficult.words`,
+    difficulty.flesch.grade = `metrics.difficulty.flesch.kincaid.grade`,
+    difficulty.flesch.ease = `metrics.difficulty.flesch.reading.ease`,
+    difficulty.gunning = `metrics.difficulty.gunning.fog`,
+    difficulty.linsear = `metrics.difficulty.linsear.write.formula`,
+    difficulty.smog = `metrics.difficulty.smog.index`,
+    stats.polarity = `metrics.sentiments.polarity`,
+    stats.subjectivity = `metrics.sentiments.subjectivity`,
+    stats.avg_letter_per_word = `metrics.statistics.average.letter.per.word`,
+    stats.avg_sentence_length = `metrics.statistics.average.sentence.length`,
+    stats.sentences_over_words = `metrics.statistics.average.sentence.per.word`,
+    stats.characters = `metrics.statistics.characters`,
+    stats.polysyllables = `metrics.statistics.polysyllables`,
+    stats.sentences = `metrics.statistics.sentences`,
+    stats.syllables = `metrics.statistics.syllables`,
+    stats.words = `metrics.statistics.words`
+  )
+glimpse(classics)
+```
+
+### Make Data Dictionary
+```{r}
+#| code-fold: true
+#| output: false
+create_data_dictionary <- function(data) {
+  data_dict <- data.frame(
+    Column_Name = names(data),
+    Data_Type = sapply(data, class),
+    Description = "",
+    Example_Values = sapply(data, function(x) paste(head(unique(x), 3), collapse = ", "))
+  )
+  return(data_dict)
+}
+
+data_dictionary <- create_data_dictionary(classics)
+data_dictionary$Description <- c(
+  "Library of Congress classifications",
+  "Title of the book",
+  "Birth date of the author",
+  "Death date of the author",
+  "Name of the author",
+  "Number of downloads",
+  "Date of publication",
+  "Calendar date of publication",
+  "Numerical month of publication",
+  "String month of publication",
+  "Year of publication",
+  "Automated readability index",
+  "Coleman Liau difficulty index",
+  "Dale Chall difficulty index",
+  "Vocab difficulty index",
+  "Flesch Kincaid diffuculty index",
+  "Flesch readablity index",
+  "Gunning Fog difficulty index",
+  "metrics.difficulty.linsear.write.formula",
+  "metrics.difficulty.smog.index",
+  "metrics.sentiments.polarity",
+  "metrics.sentiments.subjectivity",
+  "Average letters per word",
+  "Average sentence length",
+  "Sentence per word",
+  "Character count",
+  "Polysyllables count",
+  "Sentence count",
+  "Syllable count",
+  "Word count"
+)
+rm(create_data_dictionary)
+
+data_dictionary
+```
+
+## Subsetting Data
+
+### Subset of Rankings
+Makes subset dataframe of just the elements that begin with `difficulty.`<br>
+(you can catch a `glimpse` of this dataframe [below](#get-sum-of-all-rankings_subset-data), after mutation)
+```{r}
+rankings_subset <- classics |>
+  select(title, starts_with("difficulty."))
+```
+
+### Subset of Statistics
+```{r}
+stats_subset <- classics |>
+  select(title, starts_with("stats."))
+glimpse(stats_subset)
+```
+
+### Subset of Author and Publication Data
+(this one also gets mutated laters)
+```{r}
+pub_subset <- classics |>
+  select(title, starts_with("author."), starts_with("pub."))
+```
+
+## Mutations and Pivots
+
+### Get sum of all `rankings_subset` data
+Makes temporary dataframe of just numericals to get the sums from
+```{r}
+temp <- rankings_subset %>% select_if(is.numeric)
+rankings_subset <- rankings_subset |>
+  mutate(difficulty.sum = rowSums(temp, na.rm = TRUE))
+```
+Clears temporary dataframe and outputs ranking dataframe with sum
+```{r}
+rm(temp)
+glimpse(rankings_subset)
+```
+
+### Get Author Lifespan
+Pivot new row using (`author_deathdate` - `author_birthdate`)
+```{r}
+pub_subset <- pub_subset %>%
+  mutate(author.lifespan = author.deathdate - author.birthdate)
+```
+
+### Get publication data as numerical
+Use `pub_month` and `pub_month_name` to rephrase `pub_date_full`<br>
+(This is where `stringr` is used)
+```{r}
+reformat_full_date <- function(data) {
+  data$pub.date_full <- str_replace(
+    data$pub.date_full, 
+    paste0("^", data$pub.month_name), 
+    as.character(data$pub.month)
+  )|>
+    str_replace(
+    ",",
+    paste(" -", data$pub.date, "-")
+  )
+  return(data)
+}
+pub_subset <- reformat_full_date(pub_subset)
+rm(reformat_full_date)
+glimpse(pub_subset)
+```
+
+## Statistical Analysis
+### Difficulty Stats
+Vectorize the statstical analysis
+```{r}
+#| output: false
+difficulty_stats <- rankings_subset |>
+  select(starts_with("difficulty.")) |>
+  summarise(across(everything(), list(mean = mean, median = median, sd = sd), na.rm = TRUE))
+```
+Stratify the statistical analysis onto a table
+```{r}
+difficulty_stats <- difficulty_stats |>
+  pivot_longer(everything(), 
+               names_to = c("ranking", ".value"), 
+               names_pattern = "difficulty\\.(.*)_(mean|median|sd)")
+kable(difficulty_stats, format = "markdown")
+```
+And a graph
+```{r}
+
+ranking_stats <- rankings_subset |>
+  select(-difficulty.sum, -difficulty.vocabulary, -difficulty.flesch.ease) |>
+  pivot_longer(cols = starts_with("difficulty."),
+               names_to = "Metrics",
+               values_to = "Score")
+temp <- ranking_stats |>
+  mutate(Score = ifelse(Score > 75, NA, Score)) |>
+  filter(!is.na(Score)) |>
+  ggplot(aes(x = Metrics, y = Score)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Boxplots of Difficulty Metrics",
+       x = "Metrics",
+       y = "Difficulty Score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+rm(temp)
+```
+There were some pretty high ranking scores, I'm curious what those were
+```{r}
+temp <- ranking_stats |>
+  mutate(Score = ifelse(Score <= 75, NA, Score)) |>
+  filter(!is.na(Score))
+temp
+```
+The exceptionally difficult book is titled [Fifteen Thousand Useful Phrases](https://www.gutenberg.org/cache/epub/18362/pg18362-images.html)
+
+## Graphical Analysis
+### Graph Average Word Length over Word Count
+Graph `stats.avg_letter_per_word` over `stats.words`<br>
+(Ignoring points that are more that 3 standard deviations from the median)
+```{r}
+stats_subset |>
+  filter(
+    stats.words >= median(stats_subset$stats.words) - 3 * sd(stats_subset$stats.words),
+    stats.words <= median(stats_subset$stats.words) + 3 * sd(stats_subset$stats.words),
+    stats.avg_letter_per_word >= median(stats_subset$stats.avg_letter_per_word) - 3 * sd(stats_subset$stats.avg_letter_per_word),
+    stats.avg_letter_per_word <= median(stats_subset$stats.avg_letter_per_word) + 3 * sd(stats_subset$stats.avg_letter_per_word)
+  ) |>
+  ggplot(aes(x = stats.words, y = stats.avg_letter_per_word, color = stats.avg_sentence_length)) +
+  geom_point(alpha = 0.6, size = .2) +
+  labs(title = "Correlation Between Word Length and Word Count",
+    subtitle = "Average Letters Per Word vs. Number of Words",
+       x = "Number of Words",
+       y = "Average Letters Per Word",
+       color = "Average Sentence Length") +
+  scale_color_gradient(low = "blue", high = "red", name = "Average Sentence Length") +
+  scale_x_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million"))
+```
+The same thing but with the y-axis and colors flipped
+```{r}
+stats_subset |>
+  filter(
+    stats.words >= median(stats_subset$stats.words) - 3 * sd(stats_subset$stats.words),
+    stats.words <= median(stats_subset$stats.words) + 3 * sd(stats_subset$stats.words),
+    stats.avg_letter_per_word >= median(stats_subset$stats.avg_letter_per_word) - 3 * sd(stats_subset$stats.avg_letter_per_word),
+    stats.avg_letter_per_word <= median(stats_subset$stats.avg_letter_per_word) + 3 * sd(stats_subset$stats.avg_letter_per_word)
+  ) |>
+  ggplot(aes(x = stats.words, y = stats.avg_sentence_length , color = stats.avg_letter_per_word)) +
+  geom_point(alpha = 0.6, size = .2) +
+  labs(title = "Correlation Between Sentence Length and Word Count",
+    subtitle = "Average Sentence Length vs. Number of Words",
+       x = "Number of Words",
+       y = "Average Sentence Length",
+       color = "Average Letters Per Word") +
+  scale_color_gradient(low = "blue", high = "red", name = "Average Letters Per Word") +
+  scale_x_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million"))
+```
+Lets identify those outliers
+```{r}
+word <- stats_subset |>
+  filter(stats.avg_sentence_length > 75)
+word$title
+rm(word)
+```
+That darn book -- the other one is [by Descartes](https://www.gutenberg.org/files/59/59-h/59-h.htm)
+
+### Graph Character Count over Word Count
+Graph `stats.characters` over `stats.words`
+```{r}
+stats_subset |>
+  filter(
+    stats.words >= median(stats_subset$stats.words) - 3 * sd(stats_subset$stats.words),
+    stats.words <= median(stats_subset$stats.words) + 3 * sd(stats_subset$stats.words),
+    stats.characters >= median(stats_subset$stats.characters) - 3 * sd(stats_subset$stats.characters),
+    stats.characters <= median(stats_subset$stats.characters) + 3 * sd(stats_subset$stats.characters)
+  ) |>
+  ggplot(aes(x = stats.words, y = stats.characters, color = stats.syllables)) +
+  geom_point(alpha = 0.4, size = .1) +
+  labs(title = "Correlation Between Characters Count and Word Count",
+    subtitle = "Number of Characters vs. Number of Words",
+       x = "Number of Words",
+       y = "Number of Characters") +
+  scale_x_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million")) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million"))
+```
+Lets switch `stats.characters` and `stats.syllables`
+```{r}
+stats_subset |>
+  filter(
+    stats.words >= median(stats_subset$stats.words) - 3 * sd(stats_subset$stats.words),
+    stats.words <= median(stats_subset$stats.words) + 3 * sd(stats_subset$stats.words),
+    stats.syllables >= median(stats_subset$stats.syllables) - 3 * sd(stats_subset$stats.syllables),
+    stats.syllables <= median(stats_subset$stats.syllables) + 3 * sd(stats_subset$stats.syllables)
+  ) |>
+  ggplot(aes(x = stats.words, y = stats.syllables, color = stats.characters)) +
+  geom_point(alpha = 0.4, size = .1) +
+  labs(title = "Correlation Between Characters Count and Word Count",
+    subtitle = "Number of Syllables vs. Number of Words",
+       x = "Number of Words",
+       y = "Number of Syllables") +
+  scale_x_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million")) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million"))
+```
+But what about `stats.sentences`?
+```{r}
+stats_subset |>
+  filter(
+    stats.sentences >= median(stats_subset$stats.sentences) - 3 * sd(stats_subset$stats.sentences),
+    stats.sentences <= median(stats_subset$stats.sentences) + 3 * sd(stats_subset$stats.sentences),
+    stats.syllables >= median(stats_subset$stats.syllables) - 3 * sd(stats_subset$stats.syllables),
+    stats.syllables <= median(stats_subset$stats.syllables) + 3 * sd(stats_subset$stats.syllables)
+  ) |>
+  ggplot(aes(x = stats.sentences, y = stats.syllables, color = stats.characters)) +
+  geom_point(alpha = 0.4, size = .1) +
+  labs(title = "Correlation Between Characters Count and Word Count",
+    subtitle = "Number of Syllables vs. Number of Words",
+       x = "Number of Sentences",
+       y = "Number of Syllables") +
+  scale_x_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million")) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1e-6, suffix = " Million"))
+```
+Looks like it fits a line better with fewer degrees of seperation
