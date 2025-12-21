@@ -38,6 +38,11 @@ book_load <- function(id_num) {
   gutenberg_download(id_num, mirror = "http://mirror.csclub.uwaterloo.ca/gutenberg") |>
   unnest_tokens(word, text) |> anti_join(stop_words) |> select(word)
 }
+## In case the first fails
+book_load2 <- function(id_num) {
+  gutenberg_download(id_num, mirror = "...") |>
+  unnest_tokens(word, text) |> anti_join(stop_words) |> select(word)
+}
 ```
 
 Lets also make a function that takes this dataframe and graphs it. We start by breaking it up into 100 chunks. We will then multiply by `size_coefficient` to ensure that the differences in text length do not affect the results.
@@ -155,17 +160,17 @@ republic <- book_load(1497)
 # Fiction
   # Comedies
 don_quixote <- book_load(996)
-tristram_shandy <- book_load(1079)
+tristram_shandy <- book_load(39270)
 divine_comedy <- book_load(8800)
 inspector <- book_load(3735)
   # Epics
-illiad <- book_load(3059)
-odyssey <- book_load(1727)
+illiad <- book_load(6130)
+odyssey <- book_load(3160)
 gilgamesh <- book_load(11000)
-paradise_lost <- book_load(26)
+paradise_lost <- book_load(20)
   # Tragedies
-othello <- book_load(2267)
-frankenstein <- book_load(84)
+othello <- book_load(1531)
+frankenstein <- book_load(41445)
 anna_karenina <- book_load(1399)
 moby_dick <- book_load(2701)
 ```
