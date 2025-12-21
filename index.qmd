@@ -13,7 +13,7 @@ output:
 
 ## [LING343 Project 1](/Project%201/Project%201.html)
 
-## [LING343 Project 2](/project 2.html)
+## [LING343 Project 2](/Lit-Sentiment.html)
 
 ```{r}
 ```
